@@ -9,6 +9,7 @@ use std::any::Any;
 use actix::dev::{MessageResponse, ResponseChannel};
 use futures::Future;
 use std::env;
+use std::time::Instant;
 
 enum Messages {
     IncrementMsg,
@@ -115,12 +116,16 @@ impl Handler<Messages> for ProducerActor{
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
+        let start = Instant::now();
         let count_str = &args[1].to_string();
         let count: usize = count_str.parse().unwrap();
         let sys = System::new("counting_actor");
         let counter = CountingActor::new(0).start();
         let producer = ProducerActor::new(counter.recipient(), count).start();
         sys.run();
+        let elapsed = start.elapsed();
+        println!("Elapsed: {} ms",
+                 (elapsed.as_secs() * 1_000) + (elapsed.subsec_nanos() / 1_000_000) as u64);
     } else {
         println!("{}", "No Count amount was given, exiting");
     }

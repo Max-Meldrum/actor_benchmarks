@@ -6,6 +6,7 @@ use actix::prelude::*;
 use std::io;
 use std::time::Duration;
 use std::env;
+use std::time::Instant;
 
 
 // Define messages
@@ -93,6 +94,7 @@ impl Handler<Ping> for Ponger {
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
+        let start = Instant::now();
         let count_str = &args[1].to_string();
         let count: usize = count_str.parse().unwrap();
         let sys = System::new("ping_pong");
@@ -100,6 +102,9 @@ fn main() {
         let pinger = Pinger{count: count, ponger: ponger.recipient()}.start();
         pinger.do_send(Start{});
         sys.run();
+        let elapsed = start.elapsed();
+        println!("Elapsed: {} ms",
+                 (elapsed.as_secs() * 1_000) + (elapsed.subsec_nanos() / 1_000_000) as u64);
     } else {
         println!("{}", "No Count amount was given, exiting");
     }

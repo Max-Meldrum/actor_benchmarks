@@ -9,6 +9,7 @@ use std::any::Any;
 use actix::dev::{MessageResponse, ResponseChannel};
 use futures::Future;
 use std::env;
+use std::time::Instant;
 
 enum Messages {
     PingMsg(usize),
@@ -77,6 +78,7 @@ impl Handler<Messages> for RingActor {
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
+        let start = Instant::now();
         let ring_size_str = &args[1].to_string();
         let ring_size: usize = ring_size_str.parse().unwrap();
 
@@ -99,6 +101,10 @@ fn main() {
         let starter: &Addr<RingActor> = &actor_vec[0];
         starter.do_send(Messages::PingMsg(msg_count));
         sys.run();
+
+        let elapsed = start.elapsed();
+        println!("Elapsed: {} ms",
+                 (elapsed.as_secs() * 1_000) + (elapsed.subsec_nanos() / 1_000_000) as u64);
     } else {
         println!("{}", "No Ring Size or Count amount was given, exiting");
     }
