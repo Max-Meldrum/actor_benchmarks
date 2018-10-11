@@ -160,11 +160,15 @@ impl Provide<ControlPort> for Ponger {
 fn main() {
 
     let args: Vec<String> = env::args().collect();
-    if args.len() > 1 {
+    if args.len() > 2 {
         let count_str = &args[1].to_string();
         let count: usize = count_str.parse().unwrap();
 
+        let thread_str = &args[2].to_string();
+        let thread_size: usize = thread_str.parse().unwrap();
+
         let mut cfg = KompicsConfig::new();
+        cfg.threads(thread_size);
         cfg.system_components(DeadletterBox::new, NetworkDispatcher::default);
         let system = KompicsSystem::new(cfg);
 
@@ -176,6 +180,7 @@ fn main() {
 
         pinger.actor_ref().tell(Box::new(Start{}), &pinger);
         thread::sleep(Duration::from_millis(5000000));
+
 
     } else {
         println!("{}", "No Count amount was given, exiting");

@@ -174,7 +174,11 @@ fn main() {
         let count_str = &args[1].to_string();
         let count: usize = count_str.parse().unwrap();
 
+        let thread_str = &args[2].to_string();
+        let thread_size: usize = thread_str.parse().unwrap();
+
         let mut cfg = KompicsConfig::new();
+        cfg.threads(thread_size);
         cfg.system_components(DeadletterBox::new, NetworkDispatcher::default);
         let system = KompicsSystem::new(cfg);
 

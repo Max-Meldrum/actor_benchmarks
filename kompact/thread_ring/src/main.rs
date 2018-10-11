@@ -129,14 +129,18 @@ impl Actor for RingActor {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() > 1 {
+    if args.len() > 2 {
         let ring_size_str = &args[1].to_string();
         let ring_size: usize = ring_size_str.parse().unwrap();
 
         let msg_count_str = &args[2].to_string();
         let msg_count: usize = msg_count_str.parse().unwrap();
 
+        let thread_str = &args[3].to_string();
+        let thread_size: usize = thread_str.parse().unwrap();
+
         let mut cfg = KompicsConfig::new();
+        cfg.threads(thread_size);
         cfg.system_components(DeadletterBox::new, NetworkDispatcher::default);
         let system = KompicsSystem::new(cfg);
 
