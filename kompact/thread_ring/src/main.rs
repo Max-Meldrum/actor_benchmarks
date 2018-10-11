@@ -18,6 +18,7 @@ use prelude::*;
 use std::{thread};
 use std::time::Duration;
 use std::env;
+use std::time::Instant;
 
 
 #[derive(Debug, Clone)]
@@ -78,16 +79,18 @@ struct RingActor {
     ctx: ComponentContext<RingActor>,
     id: usize,
     total_actors: usize,
-    next_actor: Option<ActorRef>
+    next_actor: Option<ActorRef>,
+    instant: Instant
 }
 
 impl RingActor {
-    fn new(id: usize, total: usize) -> RingActor {
+    fn new(id: usize, total: usize, instant: Instant) -> RingActor {
         RingActor {
             ctx: ComponentContext::new(),
             id: id,
             total_actors: total,
-            next_actor: None
+            next_actor: None,
+            instant
         }
     }
 
@@ -116,6 +119,9 @@ impl Actor for RingActor {
                     if ping.has_next() {
                         next.tell(Box::new(ping.next()), self)
                     } else {
+                        let elapsed = self.instant.elapsed();
+                        println!("Elapsed: {} ms",
+                                 (elapsed.as_secs() * 1_000) + (elapsed.subsec_nanos() / 1_000_000) as u64);
                         std::process::exit(0);
                     }
                 },
@@ -130,6 +136,7 @@ impl Actor for RingActor {
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() > 2 {
+        let start = Instant::now();
         let ring_size_str = &args[1].to_string();
         let ring_size: usize = ring_size_str.parse().unwrap();
 
@@ -147,7 +154,7 @@ fn main() {
 
         let mut actor_vec: Vec<ActorRef> = Vec::new();
         for x in 0..ring_size {
-            let actor = system.create_and_register(move || RingActor::new(x, ring_size));
+            let actor = system.create_and_register(move || RingActor::new(x, ring_size, start));
             system.start(&actor);
             let actor_ref = actor.actor_ref();
             actor_vec.push(actor_ref)

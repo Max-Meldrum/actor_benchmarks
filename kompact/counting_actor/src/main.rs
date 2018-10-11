@@ -19,6 +19,7 @@ use std::{thread};
 use std::time::Duration;
 use std::process;
 use std::env;
+use std::time::Instant;
 
 #[derive(Debug, Clone)]
 struct IncrementMsg;
@@ -129,15 +130,17 @@ impl Provide<ControlPort> for CountingActor {
 struct ProducerActor {
     ctx: ComponentContext<ProducerActor>,
     counter_actor: ActorRef,
-    increments: usize
+    increments: usize,
+    instant: Instant
 }
 
 impl ProducerActor {
-    fn new(counter_actor: ActorRef, increments: usize) -> ProducerActor {
+    fn new(counter_actor: ActorRef, increments: usize, instant: Instant) -> ProducerActor {
         ProducerActor {
             ctx: ComponentContext::new(),
             counter_actor,
-            increments
+            increments,
+            instant
         }
     }
 }
@@ -146,6 +149,9 @@ impl Actor for ProducerActor {
     fn receive_local(&mut self, _sender: ActorRef, msg: Box<Any>) -> () {
         if let Some(ref i) = msg.downcast_ref::<ResultMsg>() {
             assert!(i.result == self.increments);
+            let elapsed = self.instant.elapsed();
+            println!("Elapsed: {} ms",
+                     (elapsed.as_secs() * 1_000) + (elapsed.subsec_nanos() / 1_000_000) as u64);
             process::exit(0); // Is there a System::shutdown for Kompact?
         }
     }
@@ -168,9 +174,9 @@ impl Provide<ControlPort> for ProducerActor {
 }
 
 fn main() {
-
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
+        let start = Instant::now();
         let count_str = &args[1].to_string();
         let count: usize = count_str.parse().unwrap();
 
@@ -184,7 +190,7 @@ fn main() {
 
         let counter = system.create_and_register(CountingActor::new);
         system.start(&counter);
-        let producer = system.create_and_register(move || ProducerActor::new(counter.actor_ref().clone(), count));
+        let producer = system.create_and_register(move || ProducerActor::new(counter.actor_ref().clone(), count, start));
         system.start(&producer);
 
         thread::sleep(Duration::from_millis(5000000));
@@ -192,8 +198,6 @@ fn main() {
     } else {
         println!("{}", "No Count amount was given, exiting");
     }
-
-
 
 }
 

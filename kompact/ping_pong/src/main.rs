@@ -19,6 +19,7 @@ use std::{thread};
 use std::time::Duration;
 use std::process;
 use std::env;
+use std::time::Instant;
 
 #[derive(Debug, Clone)]
 struct Ping;
@@ -82,15 +83,17 @@ impl Serialisable for Start {
 struct Pinger {
     ctx: ComponentContext<Pinger>,
     ponger: ActorRef,
-    count: usize
+    count: usize,
+    instant: Instant
 }
 
 impl Pinger {
-    fn new(ponger: ActorRef, count: usize) -> Pinger {
+    fn new(ponger: ActorRef, count: usize, instant: Instant) -> Pinger {
         Pinger {
             ctx: ComponentContext::new(),
             ponger: ponger,
-            count: count
+            count: count,
+            instant: instant
         }
     }
 }
@@ -107,6 +110,9 @@ impl Actor for Pinger {
                 self.count -= 1;
                 sender.tell(Box::new(Ping{}), self)
             } else {
+                let elapsed = self.instant.elapsed();
+                println!("Elapsed: {} ms",
+                         (elapsed.as_secs() * 1_000) + (elapsed.subsec_nanos() / 1_000_000) as u64);
                 std::process::exit(0)
             }
         }
@@ -161,6 +167,7 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
     if args.len() > 2 {
+        let start = Instant::now();
         let count_str = &args[1].to_string();
         let count: usize = count_str.parse().unwrap();
 
@@ -175,13 +182,11 @@ fn main() {
         let ponger = system.create_and_register(Ponger::new);
         system.start(&ponger);
 
-        let pinger = system.create_and_register(move || Pinger::new(ponger.actor_ref().clone(), count));
+        let pinger = system.create_and_register(move || Pinger::new(ponger.actor_ref().clone(), count, start));
         system.start(&pinger);
 
         pinger.actor_ref().tell(Box::new(Start{}), &pinger);
         thread::sleep(Duration::from_millis(5000000));
-
-
     } else {
         println!("{}", "No Count amount was given, exiting");
     }
