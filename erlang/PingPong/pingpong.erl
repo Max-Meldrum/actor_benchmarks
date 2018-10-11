@@ -1,27 +1,20 @@
 -module(pingpong).
 
--export([start/1, ping/2, pong/0]).
+-export([start/1, ping/3, pong/0]).
 
-ping(0, Pong_PID) ->
-    Pong_PID ! finished,
-    io:format("ping finished~n", []);
+ping(0, Pong_PID, MASTER) ->
+    MASTER ! finished;
 
-ping(N, Pong_PID) ->
+ping(N, Pong_PID, MASTER) ->
     Pong_PID ! {ping, self()},
     receive
         pong -> ok 
-        % io:format("Ping received pong~n", [])
     end,
-    ping(N - 1, Pong_PID).
+    ping(N - 1, Pong_PID, MASTER).
 
 pong() ->
     receive
-        finished -> 
-             io:format("Pong finished~n", []);
-            
-             
         {ping, Ping_PID} ->
-            % io:format("Pong received ping~n", []),
             Ping_PID ! pong,
             pong()
     end.
@@ -29,9 +22,12 @@ pong() ->
 start(N) ->
     Start=now(),
     Pong_PID = spawn(pingpong, pong, []),
-    spawn(pingpong, ping, [N, Pong_PID]),
-    Finish=now().
-    % io:format("Test took ~p seconds~n",[elapsedTime(Start,Finish)]).
+    spawn(pingpong, ping, [N, Pong_PID, self()]),
+    receive
+        finished ->
+            Finish=now(),
+            io:format("Test took ~p seconds~n",[elapsedTime(Start,Finish)])
+    end.
 
 elapsedTime(Start,Finish) -> 
         (toMicroSeconds(Finish) - toMicroSeconds(Start)) /1000000.
