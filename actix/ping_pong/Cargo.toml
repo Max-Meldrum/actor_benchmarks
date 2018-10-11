@@ -1,0 +1,9 @@
+[package]
+name = "ping_pong"
+version = "0.1.0"
+authors = ["Max Meldrum <max@meldrum.se>"]
+
+[dependencies]
+actix = "0.7"
+futures = "0.1"
+
