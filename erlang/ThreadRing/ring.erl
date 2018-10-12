@@ -5,7 +5,7 @@ start(N, M) ->
 	statistics(runtime),
     statistics(wall_clock),
 		Main_process = self(),
-		io:format("Creating ~p ring processes~n", [N]),
+		% io:format("Creating ~p ring processes~n", [N]),
 		spawn(fun() -> ring(1, N, M, self(), Main_process) end),
 		receive
 			ended -> void
